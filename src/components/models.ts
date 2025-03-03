@@ -6,3 +6,10 @@ export interface Todo {
 export interface Meta {
   totalCount: number;
 }
+
+export interface Chunk {
+  // data: Blob;
+  filename: string;
+  index: number;
+  totalChunks: number;
+}

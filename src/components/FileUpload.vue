@@ -1,4 +1,6 @@
 <script lang="ts">
+import type { Chunk } from './models'
+
 export default {
   data() {
     return {
@@ -19,32 +21,36 @@ export default {
       this.files.pop(i)
     },
     async uploadFiles() {
-      const projectId = 1;
+      const projectId: number = 1
 
       for (const file of this.files) {
-        const totalChunks = Math.ceil(file.size / this.chunkSize);
+        const totalChunks: number = Math.ceil(file.size / this.chunkSize)
 
-        for (let i = 0; i < totalChunks; i++){
-          document.cookie = `currentFile=${encodeURIComponent(file.name)}; path=/`;
-          document.cookie = `index=${i}; path=/`;
+        for (let i = 0; i < totalChunks; i++) {
+          document.cookie = `currentFile=${encodeURIComponent(file.name)}; path=/`
+          document.cookie = `index=${i}; path=/`
 
-          const chunk = file.slice(i * this.chunkSize, (i + 1) * this.chunkSize);
+          const data: Blob = file.slice(i * this.chunkSize, (i + 1) * this.chunkSize);
 
-          const response = await fetch("http://127.0.0.1:8080/upload/" + projectId, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/octet-stream",
-              "fileName": file.name,
-              "index": i,
-              "totalChunks": totalChunks,
-            },
-            body: chunk,
-          });
+          const chunk: Chunk = {
+            filename: file.name,
+            index: i,
+            totalChunks: totalChunks,
+          }
+
+          const formData = new FormData();
+          formData.append("data", data);
+          formData.append("meta", JSON.stringify(chunk));
+
+          const response = await fetch('http://127.0.0.1:8080/upload/' + projectId, {
+            method: 'POST',
+            body: formData,
+          })
         }
       }
     },
-    totalSize() {
-      let size = 0.0
+    totalSize(): string {
+      let size: number = 0.0
 
       this.files.forEach((file) => {
         size += file.size
@@ -52,23 +58,21 @@ export default {
 
       return this.format(size)
     },
-    format(s) {
+    format(s: number): string {
       if (s === 0) return '0,00 B'
 
-      const base = 1024
-      const unit = ['B', 'KB', 'MB', 'GB', 'TB']
+      const base: number = 1024
+      const unit: string[] = ['B', 'KB', 'MB', 'GB', 'TB']
 
       // Calculate how often base number fits into given file size
-      let x = Math.floor(Math.log(s) / Math.log(base))
+      let x: number = Math.floor(Math.log(s) / Math.log(base))
 
       // If we deal with petabyte sizes or larger, clamp x to terabyte size format
       x = x > 4 ? 4 : x
 
       return (s / Math.pow(base, x)).toFixed(2).replace('.', ',') + ' ' + unit[x]
     },
-    progress() {
-
-    },
+    progress() {},
   },
 }
 </script>
