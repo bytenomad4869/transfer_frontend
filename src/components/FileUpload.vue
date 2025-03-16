@@ -1,82 +1,3 @@
-<script lang="ts">
-import type { Chunk } from './models'
-
-export default {
-  data() {
-    return {
-      files: [],
-      chunkSize: 5 * 1024 * 1024,
-    }
-  },
-  methods: {
-    addFiles(e) {
-      const newFile = Array.from(e.target.files)
-
-      newFile.forEach((file) => {
-        // Check for duplicates
-        this.files.push(file)
-      })
-    },
-    delFile(i) {
-      this.files.pop(i)
-    },
-    async uploadFiles() {
-      const projectId: number = 1
-
-      for (const file of this.files) {
-        const totalChunks: number = Math.ceil(file.size / this.chunkSize)
-
-        for (let i = 0; i < totalChunks; i++) {
-          document.cookie = `currentFile=${encodeURIComponent(file.name)}; path=/`
-          document.cookie = `index=${i}; path=/`
-
-          const data: Blob = file.slice(i * this.chunkSize, (i + 1) * this.chunkSize);
-
-          const chunk: Chunk = {
-            filename: file.name,
-            index: i,
-            totalChunks: totalChunks,
-          }
-
-          const formData = new FormData();
-          formData.append("data", data);
-          formData.append("meta", JSON.stringify(chunk));
-
-          const response = await fetch('http://127.0.0.1:8080/upload/' + projectId, {
-            method: 'POST',
-            body: formData,
-          })
-        }
-      }
-    },
-    totalSize(): string {
-      let size: number = 0.0
-
-      this.files.forEach((file) => {
-        size += file.size
-      })
-
-      return this.format(size)
-    },
-    format(s: number): string {
-      if (s === 0) return '0,00 B'
-
-      const base: number = 1024
-      const unit: string[] = ['B', 'KB', 'MB', 'GB', 'TB']
-
-      // Calculate how often base number fits into given file size
-      let x: number = Math.floor(Math.log(s) / Math.log(base))
-
-      // If we deal with petabyte sizes or larger, clamp x to terabyte size format
-      x = x > 4 ? 4 : x
-
-      return (s / Math.pow(base, x)).toFixed(2).replace('.', ',') + ' ' + unit[x]
-    },
-    progress() {},
-  },
-}
-</script>
-
 <template>
   <div class="q-uploader column no-wrap full-width" style="height: 40vh">
     <div class="q-uploader__header">
@@ -106,7 +27,7 @@ export default {
             class="q-btn q-btn-item non-selectable no-outline q-btn--flat q-btn--rectangle q-btn--actionable q-focusable q-hoverable q-btn--dense"
             tabindex="0"
             role="button"
-            v-if="files.length !== 0"
+            v-if="files.length !== 0 && acceptPolicy"
             @click="uploadFiles"
             ><span class="q-focus-helper"></span
             ><span
@@ -145,5 +66,92 @@ export default {
     </div>
   </div>
 </template>
+
+<script lang="ts">
+import type { Chunk } from './models'
+
+export default {
+  data() {
+    return {
+      files: [] as File[],
+      chunkSize: 5 * 1024 * 1024 as number,
+    }
+  },
+  props: {
+    acceptPolicy: Boolean,
+  },
+  methods: {
+    addFiles(e: Event) {
+      const target = e.target as HTMLInputElement;
+
+      if(target.files){
+        const files: File[] = Array.from(target.files);
+
+        files.forEach((file) => {
+          // Check for duplicates
+          this.files.push(file);
+          console.log(file);
+        });
+      }
+    },
+    delFile(i: number) {
+      this.files.splice(i, 1);
+    },
+    async uploadFiles() {
+      // const projectId: number = 1
+
+      for (const file of this.files) {
+        const totalChunks: number = Math.ceil(file.size / this.chunkSize)
+
+        for (let i = 0; i < totalChunks; i++) {
+          document.cookie = `currentFile=${encodeURIComponent(file.name)}; path=/`
+          document.cookie = `index=${i}; path=/`
+
+          const data: Blob = file.slice(i * this.chunkSize, (i + 1) * this.chunkSize);
+
+          const chunk: Chunk = {
+            filename: file.name,
+            index: i,
+            totalChunks: totalChunks,
+          }
+
+          const formData = new FormData();
+          formData.append("data", data);
+          formData.append("meta", JSON.stringify(chunk));
+
+          /*const response = await fetch('http://127.0.0.1:8080/upload/' + projectId, {
+            method: 'POST',
+            body: formData,
+          })*/
+        }
+      }
+    },
+    totalSize(): string {
+      let size: number = 0.0
+
+      this.files.forEach((file) => {
+        size += file.size
+      })
+
+      return this.format(size)
+    },
+    format(s: number): string {
+      if (s === 0) return '0,00 B'
+
+      const base: number = 1024
+      const unit: string[] = ['B', 'KB', 'MB', 'GB', 'TB']
+
+      // Calculate how often base number fits into given file size
+      let x: number = Math.floor(Math.log(s) / Math.log(base))
+
+      // If we deal with petabyte sizes or larger, clamp x to terabyte size format
+      x = x > 4 ? 4 : x
+
+      return (s / Math.pow(base, x)).toFixed(2).replace('.', ',') + ' ' + unit[x]
+    },
+    progress() {},
+  },
+}
+</script>
 
 <style scoped></style>

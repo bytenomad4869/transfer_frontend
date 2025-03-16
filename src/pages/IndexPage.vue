@@ -6,20 +6,19 @@
       </div>
     </div>
     <div class="row justify-center items-center q-mb-md">
-      <div class="col-4 text-body1">Projektname:</div>
+      <div class="col-4 text-body1">Speichertopf:</div>
       <div class="col-4">
-        <!-- TODO: Add project -->
         <q-select
           filled
-          v-model="projects"
+          v-model="buckets"
           use-input
           input-debounce="0"
-          label="Projekt anlegen oder suchen"
+          label="Speichertopf anlegen oder suchen"
           behavior="menu"
         >
           <template v-slot:no-option>
             <q-item>
-              <q-item-section class="text-grey">Keine Projekte vorhanden</q-item-section>
+              <q-item-section class="text-grey">Keine Speichertöpfe vorhanden</q-item-section>
             </q-item>
           </template>
         </q-select>
@@ -28,7 +27,7 @@
     <div class="row justify-center items-center q-mb-sm">
       <div class="col-4 text-body1">Speicherdauer:</div>
       <div class="col-4">
-        <q-select filled v-model="storagePeriod" :options="['6 Monate', '10 Jahre']" label="Speicherdauer" />
+        <q-select filled v-model="storagePeriod" :options="storageOptions" label="Speicherdauer" map-options />
       </div>
     </div>
     <div class="row justify-center q-mb-md">
@@ -42,7 +41,7 @@
     </div>
     <div class="row justify-center">
       <div class="col-8">
-        <FileUpload />
+        <FileUpload :acceptPolicy="acceptPolicy" />
       </div>
     </div>
   </div>
@@ -52,6 +51,17 @@
 import FileUpload from 'src/components/FileUpload.vue';
 
 export default {
+  data() {
+    return {
+      buckets: [],
+      storagePeriod: 0,
+      storageOptions: [
+        { label: '6 Monate', value: 0 },
+        { label: '10 Jahre', value: 1 }
+      ],
+      acceptPolicy: false,
+    }
+  },
   components: {
     FileUpload
   },
