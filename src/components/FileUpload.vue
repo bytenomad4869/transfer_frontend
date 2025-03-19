@@ -74,7 +74,8 @@ export default {
   data() {
     return {
       files: [] as File[],
-      chunkSize: 5 * 1024 * 1024 as number,
+      chunkSize: (5 * 1024 * 1024) as number,
+      paused: false as boolean,
     }
   },
   props: {
@@ -82,49 +83,68 @@ export default {
   },
   methods: {
     addFiles(e: Event) {
-      const target = e.target as HTMLInputElement;
+      const target = e.target as HTMLInputElement
 
-      if(target.files){
-        const files: File[] = Array.from(target.files);
+      if (target.files) {
+        const files: File[] = Array.from(target.files)
 
         files.forEach((file) => {
           // Check for duplicates
-          this.files.push(file);
-          console.log(file);
-        });
+          this.files.push(file)
+          console.log(file)
+        })
       }
     },
     delFile(i: number) {
-      this.files.splice(i, 1);
+      this.files.splice(i, 1)
     },
     async uploadFiles() {
-      // const projectId: number = 1
+      const projectId: number = 1
+      const fileName = this.files.map((file) => {
+        name: file.name,
 
-      for (const file of this.files) {
-        const totalChunks: number = Math.ceil(file.size / this.chunkSize)
+      })
 
-        for (let i = 0; i < totalChunks; i++) {
-          document.cookie = `currentFile=${encodeURIComponent(file.name)}; path=/`
-          document.cookie = `index=${i}; path=/`
+      // Initialize upload
+      const response = await fetch('http://localhost:8080/upload/init', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(fileName),
+      })
 
-          const data: Blob = file.slice(i * this.chunkSize, (i + 1) * this.chunkSize);
-
-          const chunk: Chunk = {
-            filename: file.name,
-            index: i,
-            totalChunks: totalChunks,
-          }
-
-          const formData = new FormData();
-          formData.append("data", data);
-          formData.append("meta", JSON.stringify(chunk));
-
-          /*const response = await fetch('http://127.0.0.1:8080/upload/' + projectId, {
-            method: 'POST',
-            body: formData,
-          })*/
-        }
-      }
+      // for (const file of this.files) {
+      //   const totalChunks: number = Math.ceil(file.size / this.chunkSize)
+      //
+      //   for (let i = 0; i < totalChunks; i++) {
+      //     document.cookie = `currentFile=${encodeURIComponent(file.name)}; path=/`
+      //     document.cookie = `index=${i}; path=/`
+      //
+      //     const data: Blob = file.slice(i * this.chunkSize, (i + 1) * this.chunkSize);
+      //
+      //     const chunk: Chunk = {
+      //       filename: file.name,
+      //       index: i,
+      //       totalChunks: totalChunks,
+      //     }
+      //
+      //     const formData = new FormData();
+      //     formData.append("data", data);
+      //     formData.append("meta", JSON.stringify(chunk));
+      //
+      //     const response = await fetch('http://127.0.0.1:8080/upload/' + projectId, {
+      //       method: 'POST',
+      //       body: formData,
+      //     })
+      //   }
+      //}
+    },
+    pauseUpload() {
+      this.paused = true
+    },
+    resumeUpload() {
+      this.paused = false
     },
     totalSize(): string {
       let size: number = 0.0
