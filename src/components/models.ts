@@ -1,15 +1,13 @@
-export interface Todo {
-  id: number;
-  content: string;
-}
-
-export interface Meta {
-  totalCount: number;
+export interface Item  {
+  id: string;
+  fileName: string;
+  path: string;
+  totalChunks: number;
 }
 
 export interface Chunk {
-  // data: Blob;
-  filename: string;
+  data: Blob;
+  fileName: string;
   index: number;
   totalChunks: number;
 }

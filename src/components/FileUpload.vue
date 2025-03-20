@@ -45,7 +45,7 @@
         <div class="q-uploader__file-header row flex-center no-wrap">
           <div class="q-uploader__file-header-content col">
             <div class="q-uploader__title">{{ file.name }}</div>
-            <div class="q-uploader__subtitle row items-center no-wrap">{{ format(file.size) }}</div>
+            <div class="q-uploader__subtitle row items-center no-wrap">{{ utils.format(file.size) }}</div>
           </div>
           <button
             class="q-btn q-btn-item non-selectable no-outline q-btn--flat q-btn--round q-btn--actionable q-focusable q-hoverable q-btn--dense"
@@ -68,7 +68,8 @@
 </template>
 
 <script lang="ts">
-import type { Chunk } from './models'
+import type { Chunk, Item } from './models';
+import * as utils from './utils';
 
 export default {
   data() {
@@ -76,6 +77,8 @@ export default {
       files: [] as File[],
       chunkSize: (5 * 1024 * 1024) as number,
       paused: false as boolean,
+      items: [] as Item[],
+      utils,
     }
   },
   props: {
@@ -99,19 +102,24 @@ export default {
       this.files.splice(i, 1)
     },
     async uploadFiles() {
-      const projectId: number = 1
-      const fileName = this.files.map((file) => {
-        name: file.name,
-
-      })
+      const projectId: number = 1;
 
       // Initialize upload
+      this.files.forEach((file) => {
+        this.items.push({
+          id: utils.uuid(true),
+          fileName: file.name,
+          path: file.webkitRelativePath === "" ? "/" : file.webkitRelativePath,
+          totalChunks: Math.ceil(file.size / this.chunkSize),
+        });
+      });
+
       const response = await fetch('http://localhost:8080/upload/init', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(fileName),
+        body: JSON.stringify(this.items),
       })
 
       // for (const file of this.files) {
@@ -153,21 +161,7 @@ export default {
         size += file.size
       })
 
-      return this.format(size)
-    },
-    format(s: number): string {
-      if (s === 0) return '0,00 B'
-
-      const base: number = 1024
-      const unit: string[] = ['B', 'KB', 'MB', 'GB', 'TB']
-
-      // Calculate how often base number fits into given file size
-      let x: number = Math.floor(Math.log(s) / Math.log(base))
-
-      // If we deal with petabyte sizes or larger, clamp x to terabyte size format
-      x = x > 4 ? 4 : x
-
-      return (s / Math.pow(base, x)).toFixed(2).replace('.', ',') + ' ' + unit[x]
+      return utils.format(size)
     },
     progress() {},
   },
