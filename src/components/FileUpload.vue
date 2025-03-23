@@ -45,7 +45,9 @@
         <div class="q-uploader__file-header row flex-center no-wrap">
           <div class="q-uploader__file-header-content col">
             <div class="q-uploader__title">{{ file.name }}</div>
-            <div class="q-uploader__subtitle row items-center no-wrap">{{ utils.format(file.size) }}</div>
+            <div class="q-uploader__subtitle row items-center no-wrap">
+              {{ utils.format(file.size) }}
+            </div>
           </div>
           <button
             class="q-btn q-btn-item non-selectable no-outline q-btn--flat q-btn--round q-btn--actionable q-focusable q-hoverable q-btn--dense"
@@ -86,67 +88,75 @@ export default {
   },
   methods: {
     addFiles(e: Event) {
-      const target = e.target as HTMLInputElement
+      const target = e.target as HTMLInputElement;
 
       if (target.files) {
-        const files: File[] = Array.from(target.files)
+        const files: File[] = Array.from(target.files);
 
         files.forEach((file) => {
-          // Check for duplicates
           this.files.push(file)
-          console.log(file)
-        })
+        });
       }
     },
     delFile(i: number) {
-      this.files.splice(i, 1)
+      this.files.splice(i, 1);
     },
     async uploadFiles() {
       const projectId: number = 1;
+      let sessionId: string;
 
       // Initialize upload
       this.files.forEach((file) => {
         this.items.push({
           id: utils.uuid(true),
           fileName: file.name,
-          path: file.webkitRelativePath === "" ? "/" : file.webkitRelativePath,
+          path: file.webkitRelativePath === '' ? '/' : file.webkitRelativePath,
           totalChunks: Math.ceil(file.size / this.chunkSize),
         });
       });
 
-      const response = await fetch('http://localhost:8080/upload/init', {
+      fetch('http://localhost:8080/upload/init', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(this.items),
       })
+        .then((response) => response.json())
+        .then((json) => {
+          sessionId = json.sessionId;
 
-      // for (const file of this.files) {
-      //   const totalChunks: number = Math.ceil(file.size / this.chunkSize)
-      //
-      //   for (let i = 0; i < totalChunks; i++) {
-      //     document.cookie = `currentFile=${encodeURIComponent(file.name)}; path=/`
-      //     document.cookie = `index=${i}; path=/`
-      //
-      //     const data: Blob = file.slice(i * this.chunkSize, (i + 1) * this.chunkSize);
-      //
-      //     const chunk: Chunk = {
-      //       filename: file.name,
-      //       index: i,
-      //       totalChunks: totalChunks,
-      //     }
-      //
-      //     const formData = new FormData();
-      //     formData.append("data", data);
-      //     formData.append("meta", JSON.stringify(chunk));
-      //
-      //     const response = await fetch('http://127.0.0.1:8080/upload/' + projectId, {
-      //       method: 'POST',
-      //       body: formData,
-      //     })
-      //   }
-      //}
+          this.items.forEach((item) => {
+            const file = this.files.find((f) => f.name === item.fileName);
+            const uploads: Promise = [];
+
+            for (let i = 0; i < item.totalChunks; i++) {
+              const c: Chunk = {
+                data: file.slice(i * this.chunkSize, (i + 1) * this.chunkSize),
+                fileName: item.fileName,
+                index: i,
+                totalChunks: item.totalChunks,
+              }
+
+              const formData = new FormData();
+              formData.append('fileName', c.fileName);
+              formData.append('index', c.index.toString());
+              formData.append('totalChunks', c.totalChunks.toString());
+              formData.append('data', c.data);
+
+              uploads.push(
+                fetch('http://localhost:8080/upload/', {
+                method: 'POST',
+                headers: {
+                  'X-Session': sessionId,
+                },
+                body: formData,
+              }));
+            }
+
+            Promise.all(uploads);
+          });
+        });
     },
     pauseUpload() {
       this.paused = true
