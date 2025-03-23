@@ -128,7 +128,7 @@ export default {
 
           this.items.forEach((item) => {
             const file = this.files.find((f) => f.name === item.fileName);
-            const uploads: Promise = [];
+            const uploads: Promise<Response>[] = [];
 
             for (let i = 0; i < item.totalChunks; i++) {
               const c: Chunk = {
@@ -144,14 +144,14 @@ export default {
               formData.append('totalChunks', c.totalChunks.toString());
               formData.append('data', c.data);
 
-              uploads.push(
+              //uploads.push(
                 fetch('http://localhost:8080/upload/', {
                 method: 'POST',
                 headers: {
                   'X-Session': sessionId,
                 },
                 body: formData,
-              }));
+              });//);
             }
 
             Promise.all(uploads);
